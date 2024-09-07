@@ -23,8 +23,8 @@ Make sure you have the following installed:
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/YourUsername/Youtube-Info-Service.git
-cd Youtube-Info-Service
+git clone https://github.com/AnasKhan0607/Youtube-Learning-Mode-Info-Service.git
+cd Youtube-Learning-Mode-Info-Service
 ```
 
 2. Create a virtual environment:
@@ -109,7 +109,7 @@ curl -X GET "http://127.0.0.1:8000/video-info/X9fSMGkjtug"
 ```
 /app
     ├── /routes.py      # Defines the API routes
-    ├── /services.py    # Handles external service calls like YouTube API, Transcript API
+    ├── /service.py    # Handles external service calls like YouTube API, Transcript API
     ├── /schemas.py     # Defines the data models and response formats
     └── /main.py        # Entry point for the FastAPI service
 ```
