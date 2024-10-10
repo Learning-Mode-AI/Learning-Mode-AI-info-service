@@ -58,6 +58,27 @@ uvicorn main:app --reload
 
 This will start the server at `http://127.0.0.1:8000`. You can access the API documentation at `http://127.0.0.1:8000/docs`.
 
+### Running with Docker
+
+To build and run the service using Docker:
+
+```bash
+docker build -t youtube-info-service .
+docker run -p 8000:8000 youtube-info-service
+```
+
+Or, if you are using Docker Compose with other services:
+
+```bash
+docker-compose up --build
+```
+
+This will start the service along with other microservices in a shared network.
+
+### Integration with Main Backend
+
+This service is designed to be called by the Main Backend service, which orchestrates API requests and responses between this service, the AI service, and the video processing service. Ensure that the `youtube-info-service` is running and accessible by the backend at `http://youtube-info-service:8000` when running within the Docker network.
+
 ## API Endpoints
 
 ### 1. Fetch Video Information and Transcript
