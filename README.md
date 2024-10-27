@@ -53,7 +53,7 @@ YOUTUBE_API_KEY=your_youtube_api_key
 Run the FastAPI app using Uvicorn:
 
 ```bash
-uvicorn main:app --reload
+uvicorn app.main:app --reload
 ```
 
 This will start the server at `http://127.0.0.1:8000`. You can access the API documentation at `http://127.0.0.1:8000/docs`.
