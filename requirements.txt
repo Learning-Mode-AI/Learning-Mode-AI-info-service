@@ -18,3 +18,8 @@ tzdata==2024.1
 urllib3==2.2.2
 uvicorn==0.30.6
 youtube-transcript-api==0.6.2
+yt-dlp==2024.12.23  # Add yt-dlp to the requirements
+#----------------------------------------
+boto3>=1.26.79
+pytest>=7.2.1
+requests>=2.28.2
