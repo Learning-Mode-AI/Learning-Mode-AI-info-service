@@ -128,7 +128,6 @@ def download_audio(video_id: str):
     # Get the current working directory
     current_dir = os.getcwd()
     output_path = os.path.join(current_dir, f"{video_id}.mp3")  # Intended file path
-    final_path = f"{output_path}.mp3"  # Account for yt-dlp adding an extra .mp3 extension
 
     # yt-dlp options
     ydl_opts = {
@@ -147,11 +146,8 @@ def download_audio(video_id: str):
             ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=True)
         
         # Check if final file exists (account for additional .mp3)
-        if not os.path.exists(final_path):
-            raise Exception(f"File was not created: {final_path}")
-
-        # Rename file to match original output path (optional)
-        os.rename(final_path, output_path)
+        if not os.path.exists(output_path):
+            raise Exception(f"File was not created: {output_path}")
 
         print(f"File created: {output_path}")
         return output_path
