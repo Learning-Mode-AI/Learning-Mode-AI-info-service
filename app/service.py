@@ -25,7 +25,6 @@ def fetch_video_info(video_id: str):
     # Step 2: Fetch transcript
     try:
         transcript = fetch_video_transcript(video_id)  # This returns a formatted transcript
-        print(f" transcript:", transcript)
         video_info["transcript"] = transcript
         print(f" video info:", video_info)
     except Exception as e:
