@@ -90,6 +90,7 @@ def fetch_video_transcript(video_id: str):
         except Exception as e:
             print(f"Error during fallback transcription: {e}")
             raise Exception(f"Failed to fetch transcript via fallback: {e}")
+
         
 def process_transcription_result(transcript_result):
     """
@@ -145,14 +146,17 @@ def download_audio(video_id: str):
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=True)
         
-        # Check if final file exists (account for additional .mp3)
-        if not os.path.exists(output_path):
-            raise Exception(f"File was not created: {output_path}")
+        # yt-dlp appends another .mp3 extension; account for this
+        final_path = output_path if os.path.exists(output_path) else f"{output_path}.mp3"
 
-        print(f"File created: {output_path}")
-        return output_path
+        if not os.path.exists(final_path):
+            raise Exception(f"File was not created: {final_path}")
+
+        print(f"File created: {final_path}")
+        return final_path
     except Exception as e:
         raise Exception(f"Failed to download audio: {e}")
+
     
 def upload_to_s3(file_path, bucket_name, object_name=None):
     """
@@ -174,6 +178,11 @@ def upload_to_s3(file_path, bucket_name, object_name=None):
         s3_client.upload_file(file_path, bucket_name, object_name)
         file_uri = f"s3://{bucket_name}/{object_name}"
         print(f"File uploaded to: {file_uri}")
+        
+        # Remove the local file after upload
+        os.remove(file_path)
+        print(f"Local file deleted: {file_path}")
+        
         return file_uri
     except Exception as e:
         raise Exception(f"Failed to upload file to S3: {e}")

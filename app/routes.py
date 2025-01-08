@@ -12,3 +12,4 @@ async def get_video_info(video_id: str):
         return video_info
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
