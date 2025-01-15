@@ -18,7 +18,6 @@ YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3/videos"
 
 
 def fetch_video_info(video_id: str):
-    print(YOUTUBE_API_KEY)
     # Step 1: Get video details
     video_info = get_video_details(video_id)
     
@@ -26,10 +25,10 @@ def fetch_video_info(video_id: str):
     try:
         transcript = fetch_video_transcript(video_id)  # This returns a formatted transcript
         video_info["transcript"] = transcript
-        print(f" video info:", video_info)
     except Exception as e:
         print(f"Error fetching transcript: {e}")
         video_info["transcript"] = "Transcript could not be fetched."
+
 
     # Return the combined video info
     return video_info
@@ -59,24 +58,24 @@ def get_video_details(video_id: str):
         'channel': video_snippet['channelTitle']
     }
 
+transcription_statuses = {}
 def fetch_video_transcript(video_id: str):
     try:
         # Attempt to fetch the YouTube transcript
         transcript = YouTubeTranscriptApi.get_transcript(video_id)
         formatted_transcript = format_transcript(transcript)
-        print("YouTube Transcript Found:", formatted_transcript)
         return formatted_transcript
 
     except (NoTranscriptFound, TranscriptsDisabled):
         print(f"No YouTube transcript available for video ID: {video_id}. Falling back to audio transcription.")
-        try:
+        try:    
             audio_file = download_audio(video_id)
             print(f"Downloaded audio file: {audio_file}")
 
             if not os.path.exists(audio_file):
                 raise Exception(f"Audio file not found: {audio_file}")
 
-            bucket_name = "learningmodeai-transcriber"
+            bucket_name = "learningmodeai-transcription"
             s3_uri = upload_to_s3(audio_file, bucket_name)
 
             job_name = f"transcription-{video_id}-{int(time.time())}"
