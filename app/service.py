@@ -45,7 +45,11 @@ def get_video_details(video_id: str):
 
 def fetch_video_transcript(video_id: str):
     try:
-        transcript = YouTubeTranscriptApi.get_transcript(video_id)
+        proxies = {
+            "https": "socks5://torproxy:9050",
+            "http": "socks5://torproxy:9050",
+        }
+        transcript = YouTubeTranscriptApi.get_transcript(video_id, proxies=proxies)
         formatted_transcript = format_transcript(transcript)
         return formatted_transcript
     except NoTranscriptFound:
