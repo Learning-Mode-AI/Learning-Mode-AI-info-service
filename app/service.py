@@ -76,7 +76,7 @@ def fetch_video_transcript(video_id: str):
             if not os.path.exists(audio_file):
                 raise Exception(f"Audio file not found: {audio_file}")
 
-            bucket_name = "learningmodeai-transcriber"
+            bucket_name = "learningmodeai-transcription"
             s3_uri = upload_to_s3(audio_file, bucket_name)
 
             job_name = f"transcription-{video_id}-{int(time.time())}"
@@ -172,9 +172,12 @@ def upload_to_s3(file_path, bucket_name, object_name=None):
     if object_name is None:
         object_name = os.path.basename(file_path)
 
-    s3_client = boto3.client('s3')
+    s3_client = boto3.resource('s3')
     try:
-        s3_client.upload_file(file_path, bucket_name, object_name)
+        for bucket in s3_client.buckets.all():
+            print(bucket.name)
+        with open(file_path, 'rb') as body:
+            s3_client.Bucket('learningmodeai-transcription').put_object(Key=object_name, Body = body)
         file_uri = f"s3://{bucket_name}/{object_name}"
         print(f"File uploaded to: {file_uri}")
         
