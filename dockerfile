@@ -17,7 +17,7 @@ COPY . /app
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the .env file into the container (if it exists locally in the service folder)
-# COPY .env /app/.env
+COPY .env /app/.env
 
 # Expose the port the app runs on
 EXPOSE 8000
