@@ -46,8 +46,6 @@ def fetch_video_info(video_id: str):
         log_error(f"Error fetching transcript: {e}", video_id=video_id)
         video_info["transcript"] = "Transcript could not be fetched."
 
-
-    # Return the combined video info
     return video_info
 
 def get_video_details(video_id: str):
@@ -78,36 +76,37 @@ def get_video_details(video_id: str):
 transcription_statuses = {}
 def fetch_video_transcript(video_id: str):
     try:
-        # Attempt to fetch the YouTube transcript
         transcript = YouTubeTranscriptApi.get_transcript(video_id)
         formatted_transcript = format_transcript(transcript)
         return formatted_transcript
 
     except (NoTranscriptFound, TranscriptsDisabled):
-        print(f"No YouTube transcript available for video ID: {video_id}. Falling back to audio transcription.")
-        try:    
-            audio_file = download_audio(video_id)
-            print(f"Downloaded audio file: {audio_file}")
+        log_error(f"No YouTube transcript available for video ID: {video_id}. Falling back to audio transcription.", video_id=video_id)
+        
+    try:
+        audio_file = download_audio(video_id)
+        log_info(f"Downloaded audio file: {audio_file}", video_id=video_id)
 
-            if not os.path.exists(audio_file):
-                raise Exception(f"Audio file not found: {audio_file}")
+        if not os.path.exists(audio_file):
+            raise Exception(f"Audio file not found: {audio_file}")
 
-            bucket_name = "learningmodeai-transcription"
-            s3_uri = upload_to_s3(audio_file, bucket_name)
+        bucket_name = "learningmodeai-transcription"
+        s3_uri = upload_to_s3(audio_file, bucket_name)
 
-            job_name = f"transcription-{video_id}-{int(time.time())}"
-            print(f"Starting transcription job with name: {job_name}")
-            transcript_result = transcribe_audio(job_name, s3_uri)
+        job_name = f"transcription-{video_id}-{int(time.time())}"
+        log_info(f"Starting transcription job with name: {job_name}", video_id=video_id)
+        
+        transcript_result = transcribe_audio(job_name, s3_uri)
 
-            formatted_transcript = process_transcription_result(transcript_result)
-            return formatted_transcript
+        formatted_transcript = process_transcription_result(transcript_result, video_id)
+        return formatted_transcript
 
-        except Exception as e:
-            print(f"Error during fallback transcription: {e}")
-            raise Exception(f"Failed to fetch transcript via fallback: {e}")
+    except Exception as e:
+        log_error(f"Error during fallback transcription: {e}", video_id=video_id)
+        raise Exception(f"Failed to fetch transcript via fallback: {e}")
 
         
-def process_transcription_result(transcript_result):
+def process_transcription_result(transcript_result, video_id=None):
     """
     Process the raw transcript result from Amazon Transcribe
     and format it into grouped segments.
@@ -137,39 +136,39 @@ def process_transcription_result(transcript_result):
         segment_text = " ".join(current_segment)
         grouped_transcript.append(f"{current_start_time}: {segment_text}")
 
-    print("Formatted Transcript:", grouped_transcript)
+    log_info(f"Formatted Transcript: {grouped_transcript}", video_id=video_id)
+
     return grouped_transcript
            
 def download_audio(video_id: str):
-    # Get the current working directory
     current_dir = os.getcwd()
-    output_path = os.path.join(current_dir, f"{video_id}.mp3")  # Intended file path
-
-    # yt-dlp options
+    output_path = os.path.join(current_dir, f"{video_id}.mp3")
+    
     ydl_opts = {
-        'format': 'bestaudio/best',  # Download the best available audio format
-        'outtmpl': output_path,  # Save the file at the specified path
+        'format': 'bestaudio/best',
+        'outtmpl': output_path,
         'postprocessors': [{
-            'key': 'FFmpegExtractAudio',  # Use FFmpeg to extract audio
-            'preferredcodec': 'mp3',  # Convert the audio to MP3 format
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
         }],
     }
 
     try:
-        # Download the audio
-        print(f"Downloading audio to: {output_path}")
+        log_info(f"Downloading audio to: {output_path}", video_id=video_id)
+        
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=True)
         
-        # yt-dlp appends another .mp3 extension; account for this
         final_path = output_path if os.path.exists(output_path) else f"{output_path}.mp3"
 
         if not os.path.exists(final_path):
             raise Exception(f"File was not created: {final_path}")
 
-        print(f"File created: {final_path}")
+        log_info(f"File created: {final_path}", video_id=video_id)
         return final_path
+
     except Exception as e:
+        log_error(f"Failed to download audio: {e}", video_id=video_id)
         raise Exception(f"Failed to download audio: {e}")
 
     
@@ -195,14 +194,15 @@ def upload_to_s3(file_path, bucket_name, object_name=None):
         with open(file_path, 'rb') as body:
             s3_client.Bucket('learningmodeai-transcription').put_object(Key=object_name, Body = body)
         file_uri = f"s3://{bucket_name}/{object_name}"
-        print(f"File uploaded to: {file_uri}")
+        log_info(f"File uploaded to: {file_uri}", video_id=object_name)
         
-        # Remove the local file after upload
         os.remove(file_path)
-        print(f"Local file deleted: {file_path}")
+        log_info(f"Local file deleted: {file_path}", video_id=object_name)
         
         return file_uri
+
     except Exception as e:
+        log_error(f"Failed to upload file to S3: {e}", video_id=object_name)
         raise Exception(f"Failed to upload file to S3: {e}")
 
 def transcribe_audio(job_name, file_uri, region_name="us-east-2"):
@@ -220,7 +220,6 @@ def transcribe_audio(job_name, file_uri, region_name="us-east-2"):
     transcribe_client = boto3.client("transcribe", region_name=region_name)
 
     try:
-        # Start the transcription job
         transcribe_client.start_transcription_job(
             TranscriptionJobName=job_name,
             Media={"MediaFileUri": file_uri},
@@ -228,19 +227,18 @@ def transcribe_audio(job_name, file_uri, region_name="us-east-2"):
             LanguageCode="en-US"
         )
 
-        # Wait for the job to complete
         while True:
             response = transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
             status = response["TranscriptionJob"]["TranscriptionJobStatus"]
             if status in ["COMPLETED", "FAILED"]:
-                print(f"Transcription job status: {status}")
+                log_info(f"Transcription job status: {status}", video_id=job_name)
                 if status == "COMPLETED":
                     transcript_uri = response["TranscriptionJob"]["Transcript"]["TranscriptFileUri"]
                     transcript_response = requests.get(transcript_uri)
-                    return transcript_response.json()  # Return the transcription JSON
+                    return transcript_response.json()
                 else:
                     raise Exception("Transcription job failed.")
-            print("Waiting for transcription job to complete...")
+            log_info("Waiting for transcription job to complete...", video_id=job_name)
             time.sleep(5)
     except Exception as e:
         raise Exception(f"Failed to transcribe audio: {e}")
