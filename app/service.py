@@ -1,5 +1,6 @@
 # app/services.py
 
+import logging
 import time
 import boto3
 import json
@@ -10,6 +11,20 @@ import tempfile
 from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, TranscriptsDisabled
 from dotenv import load_dotenv
 
+# Basic Configuration for Structured Logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='{"timestamp": "%(asctime)s", "level": "%(levelname)s", "message": "%(message)s", "video_id": "%(video_id)s"}'
+)
+
+
+def log_info(message, video_id=None):
+    logging.info(message, extra={"video_id": video_id})
+
+def log_error(message, video_id=None):
+    logging.error(message, extra={"video_id": video_id})
+
+
 # Load environment variables
 load_dotenv()
 
@@ -18,6 +33,8 @@ YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3/videos"
 
 
 def fetch_video_info(video_id: str):
+    log_info("Fetching video details", video_id=video_id)
+
     # Step 1: Get video details
     video_info = get_video_details(video_id)
     
@@ -26,7 +43,7 @@ def fetch_video_info(video_id: str):
         transcript = fetch_video_transcript(video_id)  # This returns a formatted transcript
         video_info["transcript"] = transcript
     except Exception as e:
-        print(f"Error fetching transcript: {e}")
+        log_error(f"Error fetching transcript: {e}", video_id=video_id)
         video_info["transcript"] = "Transcript could not be fetched."
 
 
