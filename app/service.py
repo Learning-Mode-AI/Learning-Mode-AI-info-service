@@ -19,7 +19,7 @@ YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3/videos"
 SMARTPROXY_USER = os.getenv("SMARTPROXY_USER")
 SMARTPROXY_PASS = os.getenv("SMARTPROXY_PASS")
 SMARTPROXY_HOST = os.getenv("SMARTPROXY_HOST", "proxy.smartproxy.com")
-SMARTPROXY_PORT = os.getenv("SMARTPROXY_PORT", "10000")
+SMARTPROXY_PORT = os.getenv("SMARTPROXY_PORT", "10001")
 
 # Define proxy settings
 PROXIES = {
