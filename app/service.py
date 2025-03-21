@@ -16,15 +16,12 @@ load_dotenv()
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3/videos"
 
+# Define proxy settings
 SMARTPROXY_USER = os.getenv("SMARTPROXY_USER")
 SMARTPROXY_PASS = os.getenv("SMARTPROXY_PASS")
-SMARTPROXY_HOST = os.getenv("SMARTPROXY_HOST", "gate.smartproxy.com")
-SMARTPROXY_PORT = os.getenv("SMARTPROXY_PORT", "10001")
-
-# Define proxy settings
 PROXIES = {
-    "http": f"http://{SMARTPROXY_USER}:{SMARTPROXY_PASS}@{SMARTPROXY_HOST}:{SMARTPROXY_PORT}",
-    "https": f"http://{SMARTPROXY_USER}:{SMARTPROXY_PASS}@{SMARTPROXY_HOST}:{SMARTPROXY_PORT}",
+    "http": f"http://{SMARTPROXY_USER}:{SMARTPROXY_PASS}@gate.smartproxy.com:10001",
+    "https": f"http://{SMARTPROXY_USER}:{SMARTPROXY_PASS}@gate.smartproxy.com:10001",
 }
 
 def fetch_video_info(video_id: str):
