@@ -16,10 +16,12 @@ load_dotenv()
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3/videos"
 
-# Define proxy settings for the Tor network
+# Define proxy settings
+SMARTPROXY_USER = os.getenv("SMARTPROXY_USER")
+SMARTPROXY_PASS = os.getenv("SMARTPROXY_PASS")
 PROXIES = {
-    "http": "socks5h://torproxy:9050",
-    "https": "socks5h://torproxy:9050",
+    "http": f"http://{SMARTPROXY_USER}:{SMARTPROXY_PASS}@gate.smartproxy.com:10001",
+    "https": f"http://{SMARTPROXY_USER}:{SMARTPROXY_PASS}@gate.smartproxy.com:10001",
 }
 
 def fetch_video_info(video_id: str):
