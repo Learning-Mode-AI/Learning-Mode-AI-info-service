@@ -16,7 +16,7 @@ starlette==0.38.4
 typing_extensions==4.12.2
 tzdata==2024.1
 uvicorn==0.30.6
-youtube-transcript-api==0.6.2
+youtube-transcript-api==1.1.0
 yt-dlp==2024.12.23  # Add yt-dlp to the requirements
 #----------------------------------------
 boto3==1.26.79
