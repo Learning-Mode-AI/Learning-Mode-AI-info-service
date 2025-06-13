@@ -16,6 +16,13 @@ load_dotenv()
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3/videos"
 
+# Define proxy settings
+SMARTPROXY_USER = os.getenv("SMARTPROXY_USER")
+SMARTPROXY_PASS = os.getenv("SMARTPROXY_PASS")
+PROXIES = {
+    "http": f"http://{SMARTPROXY_USER}:{SMARTPROXY_PASS}@gate.smartproxy.com:10001",
+    "https": f"http://{SMARTPROXY_USER}:{SMARTPROXY_PASS}@gate.smartproxy.com:10001",
+}
 
 def fetch_video_info(video_id: str):
     # Step 1: Get video details
@@ -40,7 +47,7 @@ def get_video_details(video_id: str):
         'part': 'snippet'
     }
     
-    response = requests.get(YOUTUBE_API_URL, params=params)
+    response = requests.get(YOUTUBE_API_URL, params=params, proxies=PROXIES, timeout=10)
     
     if response.status_code != 200:
         raise Exception(f"Failed to fetch video info: {response.status_code}, {response.text}")
@@ -62,7 +69,7 @@ transcription_statuses = {}
 def fetch_video_transcript(video_id: str):
     try:
         # Attempt to fetch the YouTube transcript
-        transcript = YouTubeTranscriptApi.get_transcript(video_id)
+        transcript = YouTubeTranscriptApi.get_transcript(video_id, proxies=PROXIES)
         formatted_transcript = format_transcript(transcript)
         return formatted_transcript
 

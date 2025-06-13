@@ -3,7 +3,7 @@ name: Trigger Deployment
 on:
   push:
     branches:
-      - main
+      - production
 
 jobs:
   trigger-deployment:
@@ -15,4 +15,4 @@ jobs:
         with:
           token: ${{ secrets.DEPLOYMENT_PAT }}
           repository: learning-mode-ai/learning-mode-ai-deployment
-          event-type: deploy-staging
+          event-type: deploy
