@@ -73,15 +73,16 @@ def fetch_video_transcript(video_id: str):
     try:
         # Attempt to fetch the YouTube transcript
         if env == "local" or env =="docker":
-                transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+                transcript_list = YouTubeTranscriptApi.list_transcripts(video_id) #Get object with list of available transcripts
         else:
                 transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, proxies = PROXIES)
 
-        transcript_object = next(iter(transcript_list))
-        transcript = transcript_object.fetch().to_raw_data()
-
-        formatted_transcript = format_transcript(transcript)
-        print(f"✅Succesfully retrieved transcript from YoutubeTranscriptApi in {transcript_object.language}")
+        # Get first transcript in transcript list 
+        transcript_object = next(iter(transcript_list)) # Turn transcript object into iterable and get first item
+        
+        raw_transcript = transcript_object.fetch().to_raw_data() #Get the object's transcript and convert it to list of dictionaries
+        formatted_transcript = format_transcript(raw_transcript)
+        print(f"✅ Succesfully retrieved transcript from YoutubeTranscriptApi in {transcript_object.language}")
         return formatted_transcript
 
     except (NoTranscriptFound, TranscriptsDisabled):
