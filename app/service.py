@@ -71,14 +71,19 @@ def get_video_details(video_id: str):
 transcription_statuses = {}
 def fetch_video_transcript(video_id: str):
     try:
-        # Attempt to fetch the YouTube transcript
+        # Attempt to fetch the YouTube transcript list object
         if env == "local" or env =="docker":
                 transcript_list = YouTubeTranscriptApi.list_transcripts(video_id) #Get object with list of available transcripts
         else:
                 transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, proxies = PROXIES)
-
-        # Get first transcript in transcript list 
-        transcript_object = next(iter(transcript_list)) # Turn transcript object into iterable and get first item
+        # Look for an English transcript first
+        try:
+            transcript_object = transcript_list.find_transcript(['en'])
+        # Otherwise fallback to next available transcript
+        except Exception as e:
+            print("English transcript not found.")
+            # Get first transcript object in transcript list 
+            transcript_object = next(iter(transcript_list)) # Turn transcript object into iterable and get first item
         
         raw_transcript = transcript_object.fetch().to_raw_data() #Get the object's transcript and convert it to list of dictionaries
         formatted_transcript = format_transcript(raw_transcript)
