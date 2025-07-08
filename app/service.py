@@ -59,10 +59,47 @@ def get_video_details(video_id: str):
     }
 
 transcription_statuses = {}
+
+def fetch_youtube_transcript_with_retry(video_id: str, max_retries: int = 3, base_delay: float = 1.0):
+    """
+    Fetch YouTube transcript with retry mechanism and exponential backoff.
+    """
+    last_exception = None
+    
+    for attempt in range(max_retries + 1):  # +1 to include initial attempt
+        try:
+            print(f"Attempting to fetch transcript for video {video_id} (attempt {attempt + 1}/{max_retries + 1})")
+            transcript = YouTubeTranscriptApi.get_transcript(video_id)
+            print(f"Successfully fetched transcript for video {video_id} on attempt {attempt + 1}")
+            return transcript
+            
+        except (NoTranscriptFound, TranscriptsDisabled) as e:
+            # These exceptions indicate the transcript is genuinely unavailable
+            # No point in retrying for these specific errors
+            print(f"Transcript not available for video {video_id}: {e}")
+            raise e
+            
+        except Exception as e:
+            last_exception = e
+            print(f"Error fetching transcript for video {video_id} on attempt {attempt + 1}: {e}")
+            
+            # If this was the last attempt, don't wait
+            if attempt == max_retries:
+                break
+                
+            # Calculate delay with exponential backoff
+            delay = base_delay * (2 ** attempt)
+            print(f"Retrying in {delay} seconds...")
+            time.sleep(delay)
+    
+    # If we get here, all retries failed
+    print(f"Failed to fetch transcript for video {video_id} after {max_retries + 1} attempts")
+    raise Exception(f"Failed to fetch transcript after {max_retries + 1} attempts. Last error: {last_exception}")
+
 def fetch_video_transcript(video_id: str):
     try:
-        # Attempt to fetch the YouTube transcript
-        transcript = YouTubeTranscriptApi.get_transcript(video_id)
+        # Attempt to fetch the YouTube transcript with retry mechanism
+        transcript = fetch_youtube_transcript_with_retry(video_id, max_retries=5, base_delay=1.0)
         formatted_transcript = format_transcript(transcript)
         return formatted_transcript
 
