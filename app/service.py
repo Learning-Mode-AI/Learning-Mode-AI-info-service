@@ -7,6 +7,7 @@ import yt_dlp
 import requests
 import os
 import tempfile
+import random
 from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, TranscriptsDisabled
 from dotenv import load_dotenv
 
@@ -24,6 +25,31 @@ PROXIES = {
     "http": f"http://{SMARTPROXY_USER}:{SMARTPROXY_PASS}@gate.smartproxy.com:10001",
     "https": f"http://{SMARTPROXY_USER}:{SMARTPROXY_PASS}@gate.smartproxy.com:10001",
 }
+
+def retry_with_backoff(func, max_retries=3, base_delay=1, max_delay=10, backoff_factor=2):
+    """
+    Retry a function with exponential backoff and jitter.
+    """
+    last_exception = None
+    
+    for attempt in range(max_retries + 1):  # +1 to include initial attempt
+        try:
+            return func()
+        except Exception as e:
+            last_exception = e
+            if attempt == max_retries:
+                print(f"All {max_retries + 1} attempts failed. Last error: {e}")
+                raise e
+            
+            # Calculate delay with exponential backoff and jitter
+            delay = min(base_delay * (backoff_factor ** attempt), max_delay)
+            jitter = random.uniform(0, delay * 0.1)  # Add up to 10% jitter
+            total_delay = delay + jitter
+            
+            print(f"Attempt {attempt + 1} failed: {e}. Retrying in {total_delay:.2f} seconds...")
+            time.sleep(total_delay)
+    
+    raise last_exception
 
 def fetch_video_info(video_id: str):
     # Step 1: Get video details
@@ -70,12 +96,16 @@ def get_video_details(video_id: str):
 
 transcription_statuses = {}
 def fetch_video_transcript(video_id: str):
-    try:
+    """
+    Fetch video transcript with retry mechanism for improved reliability.
+    First attempts to get YouTube's native transcript, then falls back to audio transcription.
+    """
+    def attempt_youtube_transcript():
         # Attempt to fetch the YouTube transcript list object
         if env == "local" or env =="docker":
-                transcript_list = YouTubeTranscriptApi.list_transcripts(video_id) #Get object with list of available transcripts
+            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id) #Get object with list of available transcripts
         else:
-                transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, proxies = PROXIES)
+            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, proxies = PROXIES)
         # Look for an English transcript first
         try:
             transcript_object = transcript_list.find_transcript(['en'])
@@ -89,7 +119,18 @@ def fetch_video_transcript(video_id: str):
         formatted_transcript = format_transcript(raw_transcript)
         print(f"✅ Succesfully retrieved transcript from YoutubeTranscriptApi in {transcript_object.language}")
         return formatted_transcript
-
+    
+    try:
+        # Attempt to get YouTube transcript with retry mechanism
+        # Using 3 retries with exponential backoff (1s, 2s, 4s delays)
+        return retry_with_backoff(
+            attempt_youtube_transcript,
+            max_retries=3,
+            base_delay=1,
+            max_delay=8,
+            backoff_factor=2
+        )
+        
     except (NoTranscriptFound, TranscriptsDisabled):
         print(f"No YouTube transcript available for video ID: {video_id}. Falling back to audio transcription.")
         try:    
@@ -112,6 +153,31 @@ def fetch_video_transcript(video_id: str):
         except Exception as e:
             print(f"Error during fallback transcription: {e}")
             raise Exception(f"Failed to fetch transcript via fallback: {e}")
+    
+    except Exception as e:
+        print(f"Unexpected error in transcript fetching: {e}")
+        # If YouTube transcript fails with other errors after retries, fall back to audio transcription
+        print(f"YouTube transcript failed after retries for video ID: {video_id}. Falling back to audio transcription.")
+        try:    
+            audio_file = download_audio(video_id)
+            print(f"Downloaded audio file: {audio_file}")
+
+            if not os.path.exists(audio_file):
+                raise Exception(f"Audio file not found: {audio_file}")
+
+            bucket_name = "learningmodeai-transcription"
+            s3_uri = upload_to_s3(audio_file, bucket_name)
+
+            job_name = f"transcription-{video_id}-{int(time.time())}"
+            print(f"Starting transcription job with name: {job_name}")
+            transcript_result = transcribe_audio(job_name, s3_uri)
+
+            formatted_transcript = process_transcription_result(transcript_result)
+            return formatted_transcript
+
+        except Exception as fallback_error:
+            print(f"Error during fallback transcription: {fallback_error}")
+            raise Exception(f"Failed to fetch transcript via both YouTube API and fallback: Original error: {e}, Fallback error: {fallback_error}")
 
         
 def process_transcription_result(transcript_result):
