@@ -103,9 +103,9 @@ def fetch_video_transcript(video_id: str):
     def attempt_youtube_transcript():
         # Attempt to fetch the YouTube transcript list object
         if env == "local" or env =="docker":
-            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id) #Get object with list of available transcripts
+            transcript_list = YouTubeTranscriptApi.list(video_id) #Get object with list of available transcripts
         else:
-            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, proxies = PROXIES)
+            transcript_list = YouTubeTranscriptApi.list(video_id, proxies = PROXIES)
         # Look for an English transcript first
         try:
             transcript_object = transcript_list.find_transcript(['en'])
