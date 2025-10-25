@@ -21,10 +21,10 @@ env = os.getenv("ENVIRONMENT")
 # Define proxy settings
 SMARTPROXY_USER = os.getenv("SMARTPROXY_USER")
 SMARTPROXY_PASS = os.getenv("SMARTPROXY_PASS")
-PROXIES = {
-    "http": f"http://{SMARTPROXY_USER}:{SMARTPROXY_PASS}@gate.smartproxy.com:10001",
-    "https": f"http://{SMARTPROXY_USER}:{SMARTPROXY_PASS}@gate.smartproxy.com:10001",
-}
+proxy_config = GenericProxyConfig(
+    http_url=f"http://{SMARTPROXY_USER}:{SMARTPROXY_PASS}@gate.smartproxy.com:10001",
+    https_url=f"http://{SMARTPROXY_USER}:{SMARTPROXY_PASS}@gate.smartproxy.com:10001"
+)
 
 def retry_with_backoff(func, max_retries=3, base_delay=1, max_delay=10, backoff_factor=2):
     """
@@ -103,9 +103,11 @@ def fetch_video_transcript(video_id: str):
     def attempt_youtube_transcript():
         # Attempt to fetch the YouTube transcript list object
         if env == "local" or env =="docker":
-            transcript_list = YouTubeTranscriptApi.list(video_id) #Get object with list of available transcripts
+            ytt_api = YouTubeTranscriptApi()
+            transcript_list = ytt_api.list(video_id) #Get object with list of available transcripts
         else:
-            transcript_list = YouTubeTranscriptApi.list(video_id, proxies = PROXIES)
+            ytt_api = YouTubeTranscriptApi(proxy_config=proxy_config)
+            transcript_list = ytt_api.list(video_id)
         # Look for an English transcript first
         try:
             transcript_object = transcript_list.find_transcript(['en'])
